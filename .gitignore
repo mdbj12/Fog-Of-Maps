@@ -24,11 +24,11 @@ server/__pycache__
 server/migrations
 server/instance
 
+# keys
+server/client_secret.json
+
 # babel
 babel.config.js
 
 # assets
 assets/
-
-# keys
-server/client_secret.json

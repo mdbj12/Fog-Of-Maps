@@ -5,7 +5,7 @@ import { Loader } from "@googlemaps/js-api-loader"
 
 export default function Homescreen({navigation, route}){
     function handleLogout(){
-        fetch('http://10.129.2.157:5556/logout', {
+        fetch('http://192.168.1.27:5556/logout', {
             method: "DELETE"
         })
         .then(() => {

@@ -14,12 +14,12 @@ export default function App() {
   const [user, setUser] = useState(null)
 
   useEffect(() => {
-    fetch('http://10.129.2.157:5556/users')
+    fetch('http://192.168.1.27:5556/users')
     .then(res => res.json())
     .then(data => setUser(data))
     AsyncStorage.getItem('loggedIn').then((value) => {
       if (value) {
-        fetch(`http://10.129.2.157:5556/users/${value}`)
+        fetch(`http://192.168.1.27:5556/users/${value}`)
         .then(res => res.json())
         .then(data => setUser(data))
       }
@@ -60,3 +60,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
+
