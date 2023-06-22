@@ -15,7 +15,11 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Your location will be tracked while using the app",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "By allowing your location to be tracked, the map will de-render parts of the map that you have been to"
+      }
     },
     "android": {
       "adaptiveIcon": {

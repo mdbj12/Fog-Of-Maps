@@ -117,7 +117,7 @@ class UsersById(Resource):
 api.add_resource(UsersById, '/users/<int:id>')
 
 if __name__ == '__main__':
-    app.run(port=5556, debug=True, host='192.168.1.27')
+    app.run(port=5556, debug=True, host='10.129.2.157')
 
 
 # change ip address in app.py(host), app.js(useEffect), homescreen.jsx(handleLogout), login.jsx(handleStubmit, handleSignup)

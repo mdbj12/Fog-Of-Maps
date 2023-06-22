@@ -1,14 +1,14 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, View, TextInput, Button, ImageBackground, Pressable } from 'react-native';
+import { StyleSheet, Text, View, TextInput, Button, ImageBackground } from 'react-native';
 
-export default function Login({route, navigation}){
+export default function Login({navigation, route}){
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
+  const [errorMessage, setErrorMessage] = useState("")
   const [isForm, setIsForm] = useState(false)
   const [createUsername, setCreateUsername] = useState("")
   const [createEmail, setCreateEmail] = useState("")
   const [createPassword, setCreatePassword] = useState("")
-  const [errorMessage, setErrorMessage] = useState("")
 
   const signupForm = 
   <View>
@@ -47,46 +47,48 @@ export default function Login({route, navigation}){
   }
 
   function handleLogin() {
-    fetch(`http://192.168.1.27:5556/login`, {
+    const userObj = {username, password}
+
+    fetch(`http://10.129.2.157:5556/login`, {
       method: "POST",
       headers: {
       "Content-Type": "application/json",
       },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify(userObj),
     })
     .then(
-      async res => {
-          if (res.status==200){
+      async (res) => {
+          if (res.status === 200){
           let user = await res.json()
-          route.params.onLogin(user)
+          route.params?.onLogin(user)
       } else {
-          console.log("error loggin in")
+          console.log("error logging in")
       }}
     )
-    // .catch(function(error) {
-    //     console.log("error info here:" + " " + error.message)
-    // })
+    .catch(function(error) {
+        console.log("error info here:" + " " + error.message)
+    })
   }
 
   function handleSignup(){
-    const userObj = {username: createUsername, email: createEmail, password: createPassword}
+    const newUserObj = {username: createUsername, email: createEmail, password: createPassword}
     
-    fetch('http://192.168.1.27:5556/signup',{
+    fetch('http://10.129.2.157:5556/signup',{
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(userObj),
+      body: JSON.stringify(newUserObj),
     })
     .then(async res => {
-      if (res.status==201){
+      if (res.status === 201){
         let user = await res.json()
         route.params.onLogin(user)
-      } else if(res.status == 406){
+      } else if(res.status === 406){
         setErrorMessage('Username already exists')
-      } else if(res.status == 409){
+      } else if(res.status === 409){
         setErrorMessage('Email already exists')
-      } else if(res.status == 422){
+      } else if(res.status === 422){
         setErrorMessage('Please enter a password')
       }
       })
@@ -137,7 +139,7 @@ const styles = StyleSheet.create({
     height: '100%'
   },
   container: {
-    paddingTop: 20
+    paddingTop: 100
   },
   title: {
     fontSize: 40,

@@ -10,35 +10,48 @@ import Login from './Login';
 const Stack = createNativeStackNavigator()
 
 export default function App() {
-  // const [isLoading, setIsLoading] = useState(true)
   const [user, setUser] = useState(null)
 
   useEffect(() => {
-    fetch('http://192.168.1.27:5556/users')
-    .then(res => res.json())
-    .then(data => setUser(data))
-    AsyncStorage.getItem('loggedIn').then((value) => {
-      if (value) {
-        fetch(`http://192.168.1.27:5556/users/${value}`)
-        .then(res => res.json())
-        .then(data => setUser(data))
-      }
-    })
+    checkLoggedInStatus()
   }, [])
+
+  const checkLoggedInStatus = async() => {
+    const loggedInUser = await AsyncStorage.getItem('loggedIn')
+    if (loggedInUser) {
+      // User is logged in
+      fetch(`http://10.129.2.157:5556/users/${loggedInUser}`)
+        .then((res) => res.json())
+        .then((data) => {
+          setUser(data)
+        })
+        .catch((error) => {
+          console.log('Error fetching user data', error)
+        })
+    } else {
+      // User is NOT logged in
+      setUser(null)
+    }
+  }
 
   const handleLogin = (user) => {
     setUser(user)
     AsyncStorage.setItem('loggedIn', String(user.id))
   }
 
+  const handleLogout = () => {
+    setUser(null)
+    AsyncStorage.removeItem('loggedIn')
+  }
+
   return (
     <NavigationContainer style={styles.container}>
-      <Stack.Navigator>
+      <Stack.Navigator screenOptions={{headerShown: false}}>
         {user != null ? (
           <Stack.Screen
             name={`Welcome ${user.username}`}
             component={Main}
-            initialParams={{user, setUser}}
+            initialParams={{user: user, setUser: setUser, handleLogout: handleLogout}}
           />
         ) : (
           <Stack.Screen
