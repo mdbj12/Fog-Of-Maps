@@ -28,6 +28,7 @@ export default function Login({navigation, route}){
       onChangeText={text => setCreatePassword(text)}
       value={createPassword}
       placeholder='Create Password'
+      secureTextEntry
       style={styles.textInput}
     />
     {errorMessage !== "" && <Text style={styles.errorMessage}>{errorMessage}</Text>}

@@ -92,10 +92,14 @@ class UsersById(Resource):
         )
     def patch(self, id):
         user = User.query.filter_by(id=id).first()
+        if not user:
+            return make_response(
+                {'error': 'user not found'},
+                404
+            )
         data = request.get_json()
         for attr in data:
             setattr(user, attr, data[attr])
-        db.session.add(user)
         db.session.commit()
         return make_response(
             user.to_dict(),
