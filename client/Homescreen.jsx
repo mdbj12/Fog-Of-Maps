@@ -10,6 +10,13 @@ export default function Homescreen(){
     const [buttonLoading, setButtonLoading] = useState(false)
     const mapRef = useRef(null)
 
+    const initialRegion = {
+        latitude: userLocation?.latitude || 0,
+        longitude: userLocation?.longitude || 0,
+        latitudeDelta: 0.005,
+        longitudeDelta: 0.005
+    }
+
     useEffect(() => {
         getUserLocation()
     }, [])
@@ -52,21 +59,10 @@ export default function Homescreen(){
             setButtonLoading(false)
         }
     }
-    
-    const initialRegion = {
-        latitude: userLocation?.latitude || 0,
-        longitude: userLocation?.longitude || 0,
-        latitudeDelta: 0.005,
-        longitudeDelta: 0.005
-    }
-
-    const handleRegionChange = (region) => {
-        setUserLocation(region)
-    }
 
     const startLocationUpdates = async () => {
-        const { status } = await Location.requestForegroundPermissionsAsync()
-        if (status === 'granted') {
+        const { ststus } = await Location.requestForegroundPermissionsAsync()
+        if (stsus === 'granted') {
             Location.watchPositionAsync(
                 {
                     accuracy: Location.Accuracy.BestForNavigation,
@@ -98,7 +94,6 @@ export default function Homescreen(){
                 ref={mapRef}
                 style={styles.map}
                 region={initialRegion}
-                onRegionChange={handleRegionChange}
             >
                 {userLocation && (
                     <Circle
