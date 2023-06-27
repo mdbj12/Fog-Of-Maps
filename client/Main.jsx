@@ -7,12 +7,13 @@ import UserDetailsScreen from "./UserDetailsScreen";
 
 const Tab = createBottomTabNavigator()
 
-export default function Main({navigation, route}){
+export default function Main({ route }){
     // retrieve user obj from route param
     const user = route.params.user
     const setUser = route.params.setUser
     const handleLogout = route.params.handleLogout
     const [userLocation, setUserLocation] = useState(null)
+    console.log(user)
 
     useEffect(() => {
         getUserLocation()
@@ -20,7 +21,7 @@ export default function Main({navigation, route}){
 
     const getUserLocation = async() => {
         try{
-            const { status } = await Location.requestForegroundPermissionAsync()
+            const { status } = await Location.requestForegroundPermissionsAsync()
             if (status === 'granted') {
                 const location = await Location.getCurrentPositionAsync({})
                 const { latitude, longitude } = location.coords
@@ -37,7 +38,7 @@ export default function Main({navigation, route}){
                 name='Home'
                 options={{title: 'Home', headerShown:false}}
                 component={Homescreen}
-                initialParams={{ setUser, userLocation }}
+                initialParams={{ user, setUser, userLocation }}
             />
             <Tab.Screen
                 name='UserDetails'

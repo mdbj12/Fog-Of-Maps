@@ -1,14 +1,26 @@
 import React, { useEffect, useState, useRef } from "react";
 import { StyleSheet, View, Button, Dimensions, ActivityIndicator, TouchableOpacity } from "react-native";
-import MapView, { Circle } from "react-native-maps";
+import MapView, { Circle, Marker, Polygon } from "react-native-maps";
 import * as Location from 'expo-location';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
-export default function Homescreen(){
+export default function Homescreen({route}){
     const [userLocation, setUserLocation] = useState(null)
     const [isLoading, setIsLoading] = useState(true)
     const [buttonLoading, setButtonLoading] = useState(false)
+    const [markers, setMarkers] = useState([])
+    const [visited, setVisited] = useState([])
     const mapRef = useRef(null)
+
+    const user = route.params.user
+    const setUser = route.params.setUser
+
+    console.log(user)
+    useEffect(() => {
+        getUserLocation()
+        startLocationUpdates()
+        fetchMarkers()
+    }, [])
 
     const initialRegion = {
         latitude: userLocation?.latitude || 0,
@@ -17,10 +29,7 @@ export default function Homescreen(){
         longitudeDelta: 0.005
     }
 
-    useEffect(() => {
-        getUserLocation()
-    }, [])
-
+    // gets users current location
     const getUserLocation = async() => {
         try {
             const {status} = await Location.requestForegroundPermissionsAsync()
@@ -38,7 +47,8 @@ export default function Homescreen(){
         }
     }
 
-    const handleCurrentLocation = async() => {
+    // if you click the button on the top right, it will take you back to your current location
+    const handleCurrentLocation = async () => {
         try {
             setButtonLoading(true)
             const { status } = await Location.requestForegroundPermissionsAsync();
@@ -52,6 +62,7 @@ export default function Homescreen(){
                     latitudeDelta: 0.005,
                     longitudeDelta: 0.005
                 }, 500)
+                setVisited([...visited, { latitude, longitude }])
             }
         } catch (error) {
             console.log('Error getting User Location', error)
@@ -60,26 +71,61 @@ export default function Homescreen(){
         }
     }
 
+    // updates users location as they are moving around
     const startLocationUpdates = async () => {
-        const { ststus } = await Location.requestForegroundPermissionsAsync()
-        if (stsus === 'granted') {
+        try{
+            const { status } = await Location.requestForegroundPermissionsAsync()
+            if (status === 'granted') {
             Location.watchPositionAsync(
-                {
-                    accuracy: Location.Accuracy.BestForNavigation,
-                    timeInterval: 1000
-                },
-                (location) => {
-                    const { latitude, longitude } = location.coords
-                    setUserLocation({ latitude, longitude })
-                }
-            )
+                    {
+                        accuracy: Location.Accuracy.BestForNavigation,
+                        timeInterval: 1000
+                    },
+                    (location) => {
+                        const { latitude, longitude } = location.coords
+                        setUserLocation({ latitude, longitude })
+                        setVisited([...visited, { latitude, longitude }])
+                    }
+                )
+            }
+        } catch (error) {
+            console.log('Error starting location updates', error)
         }
     }
 
-    useEffect(() => {
-        startLocationUpdates()
-    }, [])
+    // grabs marker data from the Marker API route
+    const fetchMarkers = async () => {
+        try {
+            const response = await fetch(`http://10.129.2.157:5556/users/${user.id}/markers`)
+            if (!response.ok) {
+                throw new Error('Failed to fetch markers')
+            }
+            const markers = await response.json()
+            setMarkers(markers)
+        } catch (error) {
+            console.log('Error fetching markers', error)
+        } finally {
+            setIsLoading(false)
+        }
+    }
 
+    // renders markers that user has posted to the database
+    const renderMarkers = () => {
+        return markers.map((marker) => (
+            <Marker
+                key={marker.id}
+                coordinate={{
+                    latitude: marker.latitude,
+                    longitude: marker.longitude
+                }}
+                pinColor="red"
+                title="Visited!"
+                description="You've been here before!"
+            />
+        ))
+    }
+
+    // screen overlay, if something is loading, display this screen
     if (isLoading) {
         return (
             <View style={styles.loadingContainer}>
@@ -95,6 +141,18 @@ export default function Homescreen(){
                 style={styles.map}
                 region={initialRegion}
             >
+                {renderMarkers()}
+                {/* {markers.map((marker) => (
+                    <Marker
+                        key={marker.id}
+                        coordinate={{
+                            latitude: marker.latitude,
+                            longitude: marker.longitude
+                        }}
+                        title="Visited!"
+                        description="You've been here before!"
+                    />
+                    ))} */}
                 {userLocation && (
                     <Circle
                         center={{
@@ -106,7 +164,7 @@ export default function Homescreen(){
                         strokeColor="black"
                         strokeWidth={4}
                     />
-                )}
+                    )}
             </MapView>
             <TouchableOpacity
                 style={styles.buttonContainer}
@@ -116,9 +174,9 @@ export default function Homescreen(){
             >
                 {buttonLoading ? (
                     <ActivityIndicator size='small' color='#fff' />
-                ) : (
-                    <Icon name='location-arrow' size={25} color='#fff' />
-                )}
+                    ) : (
+                        <Icon name='location-arrow' size={25} color='#fff' />
+                        )}
             </TouchableOpacity>
         </View>
       );

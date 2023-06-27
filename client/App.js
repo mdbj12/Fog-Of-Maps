@@ -11,6 +11,7 @@ const Stack = createNativeStackNavigator()
 
 export default function App() {
   const [user, setUser] = useState(null)
+  // console.log()
 
   useEffect(() => {
     checkLoggedInStatus()
@@ -35,6 +36,7 @@ export default function App() {
   }
 
   const handleLogin = (user) => {
+    console.log("logging in")
     setUser(user)
     AsyncStorage.setItem('loggedIn', String(user.id))
   }
@@ -49,7 +51,7 @@ export default function App() {
       <Stack.Navigator screenOptions={{headerShown: false}}>
         {user != null ? (
           <Stack.Screen
-            name={`Welcome ${user.username}`}
+            name={`Main`}
             component={Main}
             initialParams={{user: user, setUser: setUser, handleLogout: handleLogout}}
           />

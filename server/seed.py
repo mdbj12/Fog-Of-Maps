@@ -1,25 +1,22 @@
 from app import app
-from models import db, User #Date
+from models import db, User, Marker
 
 with app.app_context():
     print('Deleting data ... ')
     User.query.delete()
-    # Date.query.delete()
+    Marker.query.delete()
 
     print('Creating User ... ')
     u1 = User(username='Michael', email='michaelj229@gmail.com', password='password')
 
+    print('Generating Coordinates ...')
+    c1 = Marker(latitude=40.707, longitude=-74.012, user_id=1, times_visited=1)
+    c2 = Marker(latitude=40.702, longitude=-74.014, user_id=1, times_visited=10)
+    c3 = Marker(latitude=40.718, longitude=-74, user_id=1, times_visited=30)
+
     users = [u1]
-    db.session.add_all(users)
+    markers = [c1, c2, c3]
+    db.session.add_all(users + markers)
     db.session.commit()
-
-    # not using date table
-
-    # print('Generating Dates ... ')
-    # d1 = Date(day='06-14-2023', user_id=u1.id)
-
-    # dates = [d1]
-    # db.session.add_all(dates)
-    # db.session.commit()
 
     print('Done Seeding!')

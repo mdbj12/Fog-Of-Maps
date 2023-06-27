@@ -3,7 +3,7 @@ from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_restful import Api, Resource
 
-from models import db, User
+from models import db, User, Marker
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'fogofwar'
@@ -119,6 +119,30 @@ class UsersById(Resource):
             202
         )
 api.add_resource(UsersById, '/users/<int:id>')
+
+class Markers(Resource):
+    def get(self, user_id):
+        markers = Marker.query.filter_by(user_id=user_id).all()
+        markers_dict_list = [marker.to_dict() for marker in markers]
+        return make_response(markers_dict_list, 200)
+    
+    def post(self, user_id):
+        data = request.get_json()
+        user = User.query.get(user_id)
+        if not user:
+            return make_response({'error': 'User not found'}, 404)
+        try:
+            new_marker = Marker(
+                latitude = data['latitude'],
+                longitude = data['longitude'],
+                user = user
+            )
+            db.session.add(new_marker)
+            db.session.commit()
+        except ValueError as e:
+            return make_response(str(e), 422)
+        return make_response(new_marker.to_dict(), 201)
+api.add_resource(Markers, '/users/<int:user_id>/markers')
 
 if __name__ == '__main__':
     app.run(port=5556, debug=True, host='10.129.2.157')

@@ -16,9 +16,9 @@ class User(db.Model, SerializerMixin):
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(db.DateTime, server_default=db.func.now(), server_onupdate=db.func.now())
 
-    # dates = db.relationship('Date', backref='user')
+    serialize_rules = ('-created_at', '-updated_at', '-markers.user')
 
-    # serialize_rules = ('-dates.user', '-created_at', '-updated_at')
+    markers = db.relationship('Marker', backref='user', lazy=True)
 
     # email validation. email must include @
     @validates('email')
@@ -33,16 +33,14 @@ class User(db.Model, SerializerMixin):
             raise ValueError('Please enter a password with more than 4 characters')
         return value
     
-# table not necessary at the moment. Come back to this later if using
-# tracks when user was created (date and time)
+class Marker(db.Model, SerializerMixin):
+    __tablename__ = 'markers'
 
-# class Date(db.Model, SerializerMixin):
-#     __tablename__ = 'dates'
+    id = db.Column(db.Integer, primary_key=True)
+    latitude = db.Column(db.Float)
+    longitude = db.Column(db.Float)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    times_visited = db.Column(db.Integer)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
 
-#     id = db.Column(db.Integer, primary_key=True)
-#     day = db.Column(db.String)
-#     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-#     created_at = db.Column(db.DateTime, server_default=db.func.now())
-#     updated_at = db.Column(db.DateTime, server_default=db.func.now(), server_onupdate=db.func.now())
-
-#     serialize_rules = ('-user.dates', '-created_at', '-updated_at')
+    serialize_rules = ('-created_at',)

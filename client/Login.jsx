@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { StyleSheet, Text, View, TextInput, Button, ImageBackground } from 'react-native';
 
-export default function Login({navigation, route}){
+export default function Login({route}){
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [errorMessage, setErrorMessage] = useState("")
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
     fontSize: 40,
     textAlign: 'center',
     paddingBottom: 20,
-    color: '#ffffff',
+    color: '#fff',
     fontWeight: 'bold',
     textShadowColor: 'black',
     textShadowOffset: {width: -3, height: 1},
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     marginHorizontal: 100,
     borderRadius: 20,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#fff',
     color: '',
     fontSize: 20,
     padding: 8
