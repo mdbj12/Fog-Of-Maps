@@ -142,17 +142,6 @@ export default function Homescreen({route}){
                 region={initialRegion}
             >
                 {renderMarkers()}
-                {/* {markers.map((marker) => (
-                    <Marker
-                        key={marker.id}
-                        coordinate={{
-                            latitude: marker.latitude,
-                            longitude: marker.longitude
-                        }}
-                        title="Visited!"
-                        description="You've been here before!"
-                    />
-                    ))} */}
                 {userLocation && (
                     <Circle
                         center={{
@@ -206,7 +195,7 @@ const styles = StyleSheet.create({
     buttonContainer: {
         position: 'absolute',
         top: 75,
-        right: 25,
+        left: 25,
         backgroundColor: 'blue',
         borderRadius: 20,
         padding: 10
