@@ -120,7 +120,7 @@ export default function Homescreen({route}){
                 }}
                 pinColor="red"
                 title="Visited!"
-                description="You've been here before!"
+                description={`Youve been here ${marker.times_visited} times!`}
             />
         ))
     }
