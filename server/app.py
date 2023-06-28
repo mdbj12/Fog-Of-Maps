@@ -144,8 +144,8 @@ class Markers(Resource):
             return make_response(str(e), 422)
         return make_response(new_marker.to_dict(), 201)
     
-    def patch(self, user_id, latitude, longitude):
-        marker = Marker.query.filter_by(user_id=user_id, latitude=latitude, longitude=longitude).first()
+    def patch(self, user_id, marker_id):
+        marker = Marker.query.filter_by(user_id=user_id, id=marker_id).first()
         if not marker:
             return make_response({'error': 'Marker not found'}, 404)
         
@@ -163,7 +163,11 @@ class Markers(Resource):
         db.session.commit()
 
         return make_response({'message': 'Marker has been deleted!'}, 202)
-api.add_resource(Markers, '/users/<int:user_id>/markers', '/users/<int:user_id>/markers/<int:marker_id>')
+api.add_resource(
+    Markers, 
+        '/users/<int:user_id>/markers',
+        '/users/<int:user_id>/markers/<int:marker_id>',
+)
 
 if __name__ == '__main__':
     app.run(port=5556, debug=True, host='10.129.2.157')

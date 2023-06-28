@@ -3,11 +3,13 @@ import { StyleSheet, View, Button, Dimensions, ActivityIndicator, TouchableOpaci
 import MapView, { Circle, Marker, Polygon } from "react-native-maps";
 import * as Location from 'expo-location';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import geolib from 'geolib'
 
 export default function Homescreen({route}){
     const [userLocation, setUserLocation] = useState(null)
     const [isLoading, setIsLoading] = useState(true)
     const [buttonLoading, setButtonLoading] = useState(false)
+    const [isMapCentered, setIsMapCentered] = useState(false)
     const [markers, setMarkers] = useState([])
     const [visited, setVisited] = useState([])
     const mapRef = useRef(null)
@@ -39,6 +41,7 @@ export default function Homescreen({route}){
                 setUserLocation({latitude, longitude})
                 // set loading status to false once location is obtained
                 setIsLoading(false)
+                setIsMapCentered(true)
             }
         } catch (error) {
             console.log('Error getting User Location', error)
@@ -51,6 +54,7 @@ export default function Homescreen({route}){
     const handleCurrentLocation = async () => {
         try {
             setButtonLoading(true)
+            setIsMapCentered(false)
             const { status } = await Location.requestForegroundPermissionsAsync();
             if (status === 'granted') {
                 const location = await Location.getCurrentPositionAsync({})
@@ -84,12 +88,71 @@ export default function Homescreen({route}){
                     (location) => {
                         const { latitude, longitude } = location.coords
                         setUserLocation({ latitude, longitude })
+
+                        // check if the user is outside of the radius of all existing markers
+                        const isOutsideRadius = markers.every((marker) => {
+                            const markerLocation = { latitude: marker.latitude, longitude: marker.longitude }
+                            const distance = geolib.getDistance(markerLocation, { latitude, longitude })
+                            return distance > 100 // replace 100 with the desired radius value
+                        })
+
+                        if (isOutsideRadius) {
+                            // create a new marker at users current location
+                            addMarker()
+                        }
                         setVisited([...visited, { latitude, longitude }])
+                        checkMarkerProximity({ latitude, longitude })
                     }
                 )
             }
         } catch (error) {
             console.log('Error starting location updates', error)
+        }
+    }
+
+    // checks proximity to markers and increments times_visited count if within the red radius
+    const checkMarkerProximity = ({ latitude, longitude }) => {
+        markers.forEach((marker) => {
+            const distance = geolib.getDistance(
+                { latitude, longitude },
+                {
+                    latitude: marker.latitude,
+                    longitude: marker.longitude
+                }
+            )
+            if (distance <= 100 && !visited.some((visit) => visit === marker.id))
+            incrementTimesVisited(marker.id)
+        })
+    }
+
+    // increments times_visited count of a marker
+    const incrementTimesVisited = async (markerID) => {
+        try {
+            const markerToUpdate = markers.find((marker) => marker.id === markerID)
+            const updatedMarker = {
+                ...markerToUpdate,
+                times_visited: markerToUpdate.times_visited + 1
+            }
+            const response = await fetch(`http://10.129.2.157:5556/users/${user.id}/markers/${markerID}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type' : 'application/json'
+                    },
+                    body: JSON.stringify(updatedMarker)
+            })
+
+            if (response.ok) {
+                // update the markers state within the updated marker recieved from the backend
+                const updatedMarkers = markers.map((marker) => 
+                marker.id === markerID ? updatedMarker : marker
+                )
+                setMarkers(updatedMarkers)
+                setVisited([...visited, markerID])
+            } else {
+                throw new Error('Failed to update Marker')
+            }
+        } catch (error) {
+            console.log('Error updating the Marker: ', error)
         }
     }
 
@@ -112,65 +175,57 @@ export default function Homescreen({route}){
     // creates a new marker based on current user location
     const addMarker = async () => {
         try {
-            const {latitude, longitude} = userLocation
+            const { latitude, longitude } = userLocation
             const existingMarker = markers.find(
-                marker => marker.latitude === latitude && marker.longitude === longitude
+                (marker) =>
+                    marker.latitude === latitude && marker.longitude === longitude
             )
 
             if (existingMarker) {
-                // if an existing marker is found, send a PATCH request to increment times_visited count
-                const updatedMarker = { ...existingMarker, times_visited: existingMarker.times_visited + 1}
-                const response = await fetch(`http://10.129.2.157:5556/uers/${user.id}/markers/${existingMarker.id}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type' : 'application/json'
-                    },
-                    body: JSON.stringify(updatedMarker)
-                })
-
-                if (response.ok) {
-                    // update the markers state with the updated marker recieved from the backend
-                    const updatedMarkers = markers.map(
-                        marker => (marker.id === existingMarker.id ? updatedMarker : marker)
-                    )
-                    setMarkers(updatedMarkers)
-                } else {
-                    throw new Error('Failed to update Marker')
-                }
+                // if an existing marker is found, send a PATCH request to increment times_visited
+                incrementTimesVisited(existingMarker.id)
             } else {
-                // if not existing marker is found, create a new Marker using a POST request
-                const response = await fetch(`http://10.129.2.157:5556/users/${user.id}/markers`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type' : 'application/json'
-                    },
-                    body: JSON.stringify({ latitude, longitude, times_visited: 1 })
-                })
+                // if no existing marker is found, create a new Marker using a POST request
+                const response = await fetch(
+                    `http://10.129.2.157:5556/users/${user.id}/markers`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type' : 'application/json'
+                        },
+                        body: JSON.stringify({ latitude, longitude, times_visited: 1 })
+                    }
+                )
 
                 if (response.ok) {
                     const newMarker = await response.json()
 
-                    // update the Markers state with the new Marker recieved from the backend
+                    // update the Markers state with the new Marker received from the backend
                     setMarkers([...markers, newMarker])
                 } else {
-                    throw new Error('Failed to add marker')
+                    throw new Error('Failed to add Marker')
                 }
             }
         } catch (error) {
-            console.log('Error adding/updating marker: ', error)
+            console.log('Error adding/updating Marker: ', error)
         }
-    }
+    }                
 
     // delete marker
     const deleteMarker = async (markerID) => {
         try {
-            const response = await fetch(`http://10.129.2.157:5556/users/${user.id}/markers/${markerID}`, {
-                method: 'DELETE'
-            })
+            const response = await fetch(
+                `http://10.129.2.157:5556/users/${user.id}/markers/${markerID}`, 
+                {
+                    method: 'DELETE'
+                }
+            )
 
             if (response.ok) {
                 // remove the deleted marker from the markers state
-                const updatedMarkers = markers.filter((marker) => marker.id !== markerID)
+                const updatedMarkers = markers.filter(
+                    (marker) => marker.id !== markerID
+                )
                 setMarkers(updatedMarkers)
             } else {
                 throw new Error('Failed to delete Marker')
@@ -220,7 +275,7 @@ export default function Homescreen({route}){
 
     return (
         <View style={styles.container}>
-            {isLoading ? (
+            {isLoading || !isMapCentered ? (
                 <ActivityIndicator size='large' color='#0000ff' />
             ) : (
                 <>
@@ -301,5 +356,11 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0, 0, 0, 0.6)',
         padding: 10,
         borderRadius: 20
+    },
+    container: {
+        flex: 1,
+        backgroundColor: '#fff',
+        justifyContent: 'center',
+        alignItems: 'center'
     }
 })

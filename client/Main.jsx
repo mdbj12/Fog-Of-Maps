@@ -8,8 +8,7 @@ import UserDetailsScreen from "./UserDetailsScreen";
 const Tab = createBottomTabNavigator()
 
 export default function Main({ route }){
-    // retrieve user obj from route param
-    const user = route.params.user
+    const user = route.params.user // retrieve user obj from route param
     const setUser = route.params.setUser
     const handleLogout = route.params.handleLogout
     const [userLocation, setUserLocation] = useState(null)
