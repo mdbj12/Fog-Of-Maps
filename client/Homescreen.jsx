@@ -109,66 +109,165 @@ export default function Homescreen({route}){
         }
     }
 
+    // creates a new marker based on current user location
+    const addMarker = async () => {
+        try {
+            const {latitude, longitude} = userLocation
+            const existingMarker = markers.find(
+                marker => marker.latitude === latitude && marker.longitude === longitude
+            )
+
+            if (existingMarker) {
+                // if an existing marker is found, send a PATCH request to increment times_visited count
+                const updatedMarker = { ...existingMarker, times_visited: existingMarker.times_visited + 1}
+                const response = await fetch(`http://10.129.2.157:5556/uers/${user.id}/markers/${existingMarker.id}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type' : 'application/json'
+                    },
+                    body: JSON.stringify(updatedMarker)
+                })
+
+                if (response.ok) {
+                    // update the markers state with the updated marker recieved from the backend
+                    const updatedMarkers = markers.map(
+                        marker => (marker.id === existingMarker.id ? updatedMarker : marker)
+                    )
+                    setMarkers(updatedMarkers)
+                } else {
+                    throw new Error('Failed to update Marker')
+                }
+            } else {
+                // if not existing marker is found, create a new Marker using a POST request
+                const response = await fetch(`http://10.129.2.157:5556/users/${user.id}/markers`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type' : 'application/json'
+                    },
+                    body: JSON.stringify({ latitude, longitude, times_visited: 1 })
+                })
+
+                if (response.ok) {
+                    const newMarker = await response.json()
+
+                    // update the Markers state with the new Marker recieved from the backend
+                    setMarkers([...markers, newMarker])
+                } else {
+                    throw new Error('Failed to add marker')
+                }
+            }
+        } catch (error) {
+            console.log('Error adding/updating marker: ', error)
+        }
+    }
+
+    // delete marker
+    const deleteMarker = async (markerID) => {
+        try {
+            const response = await fetch(`http://10.129.2.157:5556/users/${user.id}/markers/${markerID}`, {
+                method: 'DELETE'
+            })
+
+            if (response.ok) {
+                // remove the deleted marker from the markers state
+                const updatedMarkers = markers.filter((marker) => marker.id !== markerID)
+                setMarkers(updatedMarkers)
+            } else {
+                throw new Error('Failed to delete Marker')
+            }
+        } catch (error) {
+            console.log('Error deleting Marker: ', error)
+        }
+    }
+
     // renders markers that user has posted to the database
     const renderMarkers = () => {
         return markers.map((marker) => (
-            <Marker
-                key={marker.id}
-                coordinate={{
-                    latitude: marker.latitude,
-                    longitude: marker.longitude
-                }}
-                pinColor="red"
-                title="Visited!"
-                description={`Youve been here ${marker.times_visited} times!`}
-            />
+            <React.Fragment key={marker.id}>
+                <Marker
+                    key={marker.id}
+                    coordinate={{
+                        latitude: marker.latitude,
+                        longitude: marker.longitude
+                    }}
+                    pinColor="red"
+                    title="Visited!"
+                    description={`Youve been here ${marker.times_visited} times!`}
+                />
+                <Circle
+                    center={{
+                        latitude: marker.latitude,
+                        longitude: marker.longitude
+                    }}
+                    radius={100} // adjust the radius as needed
+                    fillColor="rgba(255, 0, 0, 0.3)"
+                    strokeColor="red"
+                    strokeWidth={2}
+                />
+                <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => deleteMarker(marker.id)} // call the deleteMarker function with the marker_id
+                >
+                    <Icon
+                        name="trash"
+                        size={20}
+                        color='#fff'
+                    />
+                </TouchableOpacity>
+            </React.Fragment>
         ))
-    }
-
-    // screen overlay, if something is loading, display this screen
-    if (isLoading) {
-        return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size='large' color='blue' />
-            </View>
-        )
     }
 
     return (
         <View style={styles.container}>
-            <MapView
-                ref={mapRef}
-                style={styles.map}
-                region={initialRegion}
-            >
-                {renderMarkers()}
-                {userLocation && (
-                    <Circle
-                        center={{
-                            latitude: userLocation.latitude,
-                            longitude: userLocation.longitude
-                        }}
-                        radius={25}
-                        fillColor="rgba(0, 122, 255, 0.6)"
-                        strokeColor="black"
-                        strokeWidth={4}
-                    />
-                    )}
-            </MapView>
-            <TouchableOpacity
-                style={styles.buttonContainer}
-                onPress={handleCurrentLocation}
-                // disable the button when loading
-                disabled={buttonLoading}
-            >
-                {buttonLoading ? (
-                    <ActivityIndicator size='small' color='#fff' />
-                    ) : (
-                        <Icon name='location-arrow' size={25} color='#fff' />
+            {isLoading ? (
+                <ActivityIndicator size='large' color='#0000ff' />
+            ) : (
+                <>
+                    <MapView
+                        style={styles.map}
+                        region={initialRegion}
+                        ref={mapRef}
+                    >
+                        {userLocation && (
+                            <>
+                                <Marker
+                                    coordinate={userLocation}
+                                    title="You are here"
+                                    pinColor="blue"
+                                />
+                                {visited.map((visit, index) => (
+                                    <Circle
+                                        key={index}
+                                        center={visit}
+                                        radius={20}
+                                        fillColor="rgba(0, 255, 0, 1)"
+                                        strokeColor="rgba(255, 0, 0, 1)"
+                                        strokeWidth={2}
+                                    />
+                                ))}
+                                {renderMarkers()}
+                            </>
                         )}
-            </TouchableOpacity>
+                    </MapView>
+                    <TouchableOpacity
+                        style={styles.locationButton}
+                        onPress={handleCurrentLocation}
+                        disabled={buttonLoading}
+                    >
+                        {buttonLoading ? (
+                            <ActivityIndicator size='small' color='#fff' />
+                        ) : (
+                            <Icon name='location-arrow' size={20} color='#fff' />
+                        )}
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.addButton} onPress={addMarker} >
+                        <Icon name='plus' size={20} color='#fff' />
+                    </TouchableOpacity>
+                </>
+            )}
         </View>
-      );
+    )
 }
 
 const styles = StyleSheet.create({
@@ -179,30 +278,28 @@ const styles = StyleSheet.create({
     map: {
         ...StyleSheet.absoluteFillObject,
     },
-    overlayContainer: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 1,
-        padding: 16,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.7)',
-        paddingTop: 50
-    },
-    buttonContainer: {
+    locationButton: {
         position: 'absolute',
         top: 75,
         left: 25,
-        backgroundColor: 'blue',
-        borderRadius: 20,
-        padding: 10
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        padding: 10,
+        borderRadius: 20
     },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center'
+    addButton: {
+        position: "absolute",
+        bottom: 20,
+        right: 20,
+        backgroundColor: "rgba(0, 0, 0, 0.6)",
+        padding: 10,
+        borderRadius: 20
+    },
+    deleteButton: {
+        position: 'absolute',
+        top: 125,
+        left: 25,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        padding: 10,
+        borderRadius: 20
     }
 })
