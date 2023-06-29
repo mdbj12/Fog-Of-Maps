@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, View, TextInput, Button, ImageBackground } from 'react-native';
+import { StyleSheet, Text, View, TextInput, Button, ImageBackground, Alert } from 'react-native';
 
-export default function Login({ route }){
+export default function Login({ route, onLogin }){
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [errorMessage, setErrorMessage] = useState("")
@@ -13,19 +13,19 @@ export default function Login({ route }){
   const signupForm = 
   <View>
     <TextInput 
-      onChangeText={text => setCreateUsername(text)}
+      onChangeText={text => setCreateUsername(text.toLowerCase())}
       value={createUsername}
       placeholder='Enter Username'
       style={styles.textInput}
     />
     <TextInput 
-      onChangeText={text => setCreateEmail(text)}
+      onChangeText={text => setCreateEmail(text.toLowerCase())}
       value={createEmail}
       placeholder='Enter Email'
       style={styles.textInput}
     />
     <TextInput 
-      onChangeText={text => setCreatePassword(text)}
+      onChangeText={text => setCreatePassword(text.toLowerCase())}
       value={createPassword}
       placeholder='Create Password'
       secureTextEntry
@@ -48,7 +48,10 @@ export default function Login({ route }){
   }
 
   function handleLogin() {
-    const userObj = {username, password}
+    const userObj = {
+      username: username.toLowerCase(),
+      password: password
+    }
 
     fetch(`http://10.129.2.157:5556/login`, {
       method: "POST",
@@ -59,12 +62,19 @@ export default function Login({ route }){
     })
     .then(
       async (res) => {
-          if (res.status === 200){
+        if (res.status === 200){
           let user = await res.json()
-          route.params?.onLogin(user)
-      } else {
-          console.log("error logging in")
-      }}
+          route.params.onLogin(user)
+        } else if(res.status === 406) {
+            setErrorMessage('Username does not exist!')
+        } else if(res.status === 422) {
+            setErrorMessage('Email does not exist!')
+        } else if(res.status === 422) {
+            setErrorMessage('Password Incorrect!')
+        } else {
+            console.log("error logging in")
+        }
+      }
     )
     .catch(function(error) {
         console.log("error info here:" + " " + error.message)
@@ -72,7 +82,11 @@ export default function Login({ route }){
   }
 
   function handleSignup(){
-    const newUserObj = {username: createUsername, email: createEmail, password: createPassword}
+    const newUserObj = {
+      username: createUsername.toLowerCase(),
+      email: createEmail.toLowerCase(),
+      password: createPassword.toLowerCase()
+    }
     
     fetch('http://10.129.2.157:5556/signup',{
       method: "POST",
@@ -85,6 +99,7 @@ export default function Login({ route }){
       if (res.status === 201){
         let user = await res.json()
         route.params.onLogin(user)
+        Alert.alert('Signup Successful!', 'Your account has been created.')
       } else if(res.status === 406){
         setErrorMessage('Username already exists')
       } else if(res.status === 409){
@@ -101,13 +116,13 @@ export default function Login({ route }){
         <View style={styles.container}>
           <Text style={styles.title}>Fog Of Maps</Text>
           <TextInput 
-            onChangeText={text => setUsername(text)}
+            onChangeText={text => setUsername(text.toLowerCase())}
             value={username}
             placeholder='Username...'
             style={styles.textInput}
           />
           <TextInput 
-            onChangeText={text => setPassword(text)}
+            onChangeText={text => setPassword(text.toLowerCase())}
             value={password}
             placeholder='Password...'
             secureTextEntry
@@ -158,7 +173,6 @@ const styles = StyleSheet.create({
     marginBottom: 20
   },
   loginButton: {
-    backgroundColor: '',
     width: 200,
     borderRadius: 20
   },
@@ -167,7 +181,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 100,
     borderRadius: 20,
     backgroundColor: '#fff',
-    color: '',
     fontSize: 20,
     padding: 8
   },

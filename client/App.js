@@ -36,7 +36,7 @@ export default function App() {
   }
 
   const handleLogin = (user) => {
-    console.log("logging in")
+    // console.log("logging in")
     setUser(user)
     AsyncStorage.setItem('loggedIn', String(user.id))
   }
@@ -53,7 +53,7 @@ export default function App() {
           <Stack.Screen
             name={`Main`}
             component={Main}
-            initialParams={{user: user, setUser: setUser, handleLogout: handleLogout}}
+            initialParams={{user, setUser, handleLogout}}
           />
         ) : (
           <Stack.Screen

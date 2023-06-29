@@ -178,6 +178,7 @@ if __name__ == '__main__':
 # vital 10.42.135.150
 # kaigo 192.168.86.20
 # home 192.168.1.27
+# mobile hotspot 172.20.10.5
 
 
 

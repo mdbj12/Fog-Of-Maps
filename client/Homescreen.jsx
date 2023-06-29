@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useRef } from "react";
-import { StyleSheet, View, Button, Dimensions, ActivityIndicator, TouchableOpacity } from "react-native";
+import { StyleSheet, View, ActivityIndicator, TouchableOpacity } from "react-native";
 import MapView, { Circle, Marker, Polygon } from "react-native-maps";
 import * as Location from 'expo-location';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import geolib from 'geolib'
 
-export default function Homescreen({route}){
+export default function Homescreen({ route }){
     const [userLocation, setUserLocation] = useState(null)
     const [isLoading, setIsLoading] = useState(true)
     const [buttonLoading, setButtonLoading] = useState(false)
@@ -15,9 +15,8 @@ export default function Homescreen({route}){
     const mapRef = useRef(null)
 
     const user = route.params.user
-    const setUser = route.params.setUser
 
-    console.log(user)
+    // console.log(user)
     useEffect(() => {
         getUserLocation()
         startLocationUpdates()
@@ -40,13 +39,13 @@ export default function Homescreen({route}){
                 const {latitude, longitude} = location.coords
                 setUserLocation({latitude, longitude})
                 // set loading status to false once location is obtained
-                setIsLoading(false)
                 setIsMapCentered(true)
             }
         } catch (error) {
             console.log('Error getting User Location', error)
-            // set loading status to false in case of an error
+        } finally {
             setIsLoading(false)
+            setIsMapCentered(true)
         }
     }
 
@@ -54,18 +53,23 @@ export default function Homescreen({route}){
     const handleCurrentLocation = async () => {
         try {
             setButtonLoading(true)
-            setIsMapCentered(false)
             const { status } = await Location.requestForegroundPermissionsAsync();
             if (status === 'granted') {
                 const location = await Location.getCurrentPositionAsync({})
                 const { latitude, longitude } = location.coords
                 setUserLocation({ latitude, longitude })
-                mapRef.current.animateToRegion({
-                    latitude,
-                    longitude,
-                    latitudeDelta: 0.005,
-                    longitudeDelta: 0.005
-                }, 500)
+
+                if (mapRef.current){
+                    mapRef.current.animateToRegion(
+                        {
+                            latitude,
+                            longitude,
+                            latitudeDelta: 0.005,
+                            longitudeDelta: 0.005
+                        },
+                        500
+                    )
+                }
                 setVisited([...visited, { latitude, longitude }])
             }
         } catch (error) {
@@ -89,16 +93,22 @@ export default function Homescreen({route}){
                         const { latitude, longitude } = location.coords
                         setUserLocation({ latitude, longitude })
 
-                        // check if the user is outside of the radius of all existing markers
-                        const isOutsideRadius = markers.every((marker) => {
-                            const markerLocation = { latitude: marker.latitude, longitude: marker.longitude }
-                            const distance = geolib.getDistance(markerLocation, { latitude, longitude })
-                            return distance > 100 // replace 100 with the desired radius value
-                        })
-
-                        if (isOutsideRadius) {
+                        // check if there are no markers
+                        if (markers.length === 0) {
                             // create a new marker at users current location
                             addMarker()
+                        } else {
+                            // check if the user is outside of the radius of all existing markers
+                            const isOutsideRadius = markers.every((marker) => {
+                                const markerLocation = { latitude: marker.latitude, longitude: marker.longitude }
+                                const distance = geolib.getDistance(markerLocation, { latitude, longitude })
+                                return distance > 100 // replace 100 with the desired radius value
+                            })
+
+                            if (isOutsideRadius) {
+                                // create a new marker at users current location
+                                addMarker()
+                            }
                         }
                         setVisited([...visited, { latitude, longitude }])
                         checkMarkerProximity({ latitude, longitude })
@@ -133,13 +143,16 @@ export default function Homescreen({route}){
                 ...markerToUpdate,
                 times_visited: markerToUpdate.times_visited + 1
             }
-            const response = await fetch(`http://10.129.2.157:5556/users/${user.id}/markers/${markerID}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type' : 'application/json'
-                    },
-                    body: JSON.stringify(updatedMarker)
-            })
+            const response = await fetch(
+                `http://10.129.2.157:5556/users/${user.id}/markers/${markerID}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type' : 'application/json'
+                        },
+                        body: JSON.stringify(updatedMarker)
+                    }
+                )
 
             if (response.ok) {
                 // update the markers state within the updated marker recieved from the backend
@@ -159,7 +172,9 @@ export default function Homescreen({route}){
     // grabs marker data from the Marker API route
     const fetchMarkers = async () => {
         try {
-            const response = await fetch(`http://10.129.2.157:5556/users/${user.id}/markers`)
+            const response = await fetch(
+                `http://10.129.2.157:5556/users/${user.id}/markers`
+            )
             if (!response.ok) {
                 throw new Error('Failed to fetch markers')
             }
@@ -175,6 +190,11 @@ export default function Homescreen({route}){
     // creates a new marker based on current user location
     const addMarker = async () => {
         try {
+            if (!userLocation) {
+                console.log('User location not available yet')
+                return
+            }
+
             const { latitude, longitude } = userLocation
             const existingMarker = markers.find(
                 (marker) =>
@@ -248,6 +268,7 @@ export default function Homescreen({route}){
                     pinColor="red"
                     title="Visited!"
                     description={`Youve been here ${marker.times_visited} times!`}
+                    // onPress={() => deleteMarker(marker.id)} // calling on deleteMarker function to delete selected Marker
                 />
                 <Circle
                     center={{
