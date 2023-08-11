@@ -210,6 +210,7 @@ if __name__ == '__main__':
 
 # CORS(app)
 # # delete key!!! app.secret
+# these keys do not work. CREATE NEW KEY IF USING GOOGLE AUTH
 # app.secret_key = "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"
 # app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///db.sqlite"
 # app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False

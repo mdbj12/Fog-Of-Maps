@@ -8,12 +8,14 @@ import geolib from 'geolib'
 export default function Homescreen({ route }){
     const [userLocation, setUserLocation] = useState(null)
     const [isLoading, setIsLoading] = useState(true)
+
     const [buttonLoading, setButtonLoading] = useState(false)
     const [isMapCentered, setIsMapCentered] = useState(false)
+
     const [markers, setMarkers] = useState([])
     const [visited, setVisited] = useState([])
-    const mapRef = useRef(null)
 
+    const mapRef = useRef(null)
     const user = route.params.user
 
     // console.log(user)
@@ -229,7 +231,7 @@ export default function Homescreen({ route }){
         } catch (error) {
             console.log('Error adding/updating Marker: ', error)
         }
-    }                
+    }
 
     // delete marker
     const deleteMarker = async (markerID) => {
@@ -305,6 +307,7 @@ export default function Homescreen({ route }){
                         region={initialRegion}
                         ref={mapRef}
                     >
+                        {/* display current location and users Markers */}
                         {userLocation && (
                             <>
                                 <Marker
@@ -326,6 +329,8 @@ export default function Homescreen({ route }){
                             </>
                         )}
                     </MapView>
+
+                    {/* go to current location button */}
                     <TouchableOpacity
                         style={styles.locationButton}
                         onPress={handleCurrentLocation}
